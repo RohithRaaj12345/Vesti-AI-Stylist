@@ -3,5 +3,7 @@ uvicorn[standard]==0.34.0
 python-multipart==0.0.20
 google-genai==1.39.1
 pillow==11.1.0
+pillow-heif==0.21.0
+imageio-ffmpeg==0.5.1
 python-dotenv==1.0.1
 pydantic==2.10.4

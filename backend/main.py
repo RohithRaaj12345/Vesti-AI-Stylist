@@ -15,8 +15,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 import gemini_service
+import media
 from gemini_service import GeminiConfigError
-from schemas import GenerateOutfitRequest, GenerateOutfitResponse, StyleBlueprint
+from schemas import AnalyzeResponse, GenerateOutfitRequest, GenerateOutfitResponse
 
 app = FastAPI(title="Vesti AI Stylist", version="1.0.0")
 
@@ -28,8 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
-MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_BYTES = 100 * 1024 * 1024  # 100 MB (videos can be large)
 
 
 @app.get("/api/health")
@@ -37,27 +37,63 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-@app.post("/api/analyze", response_model=StyleBlueprint)
-async def analyze(photo: UploadFile = File(...)) -> StyleBlueprint:
-    """Analyze an uploaded person photo and return the full Style Blueprint."""
-    if photo.content_type not in ALLOWED_TYPES:
+@app.post("/api/analyze", response_model=AnalyzeResponse)
+async def analyze(photo: UploadFile = File(...)) -> AnalyzeResponse:
+    """Analyze an uploaded photo or video and return the Style Blueprint.
+
+    Accepts any image or video format. The upload is normalized server-side to a
+    single JPEG still (`base_image_b64`) that the frontend reuses for preview and
+    outfit generation.
+    """
+    kind = media.classify(photo.content_type, photo.filename)
+    if kind is None:
         raise HTTPException(
             status_code=415,
-            detail="Please upload a JPEG, PNG or WebP image.",
+            detail="Please upload a photo or video (image or video file).",
         )
 
     data = await photo.read()
     if not data:
         raise HTTPException(status_code=400, detail="The uploaded file is empty.")
     if len(data) > MAX_BYTES:
-        raise HTTPException(status_code=413, detail="Image must be 10 MB or smaller.")
+        raise HTTPException(status_code=413, detail="File must be 100 MB or smaller.")
 
     try:
-        return gemini_service.analyze_image(data, photo.content_type)
+        if kind == "video":
+            base_image = media.extract_video_frame(data)
+            blueprint = gemini_service.analyze_video(data)
+        else:
+            base_image = media.normalize_image(data)
+            blueprint = gemini_service.analyze_image_bytes(base_image)
+
+        # Rule: the whole person must be in frame, head to toe.
+        if not blueprint.person_fully_visible:
+            note = (blueprint.visibility_note or "").strip()
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "The person cannot be identified fully"
+                    + (f" — {note}" if note else "")
+                    + ". Please upload a photo showing your full body, head to toe."
+                ),
+            )
+
+        # Draw the measurement caliper image as part of building the report.
+        measurement_image = gemini_service.generate_measurement_image(
+            base_image, blueprint.body_measurements
+        )
     except GeminiConfigError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+    except HTTPException:
+        raise
     except Exception as exc:  # pragma: no cover - surface a clean message to the UI
         raise HTTPException(status_code=502, detail=f"Analysis failed: {exc}")
+
+    return AnalyzeResponse(
+        blueprint=blueprint,
+        base_image_b64=base64.b64encode(base_image).decode("ascii"),
+        measurement_image_b64=base64.b64encode(measurement_image).decode("ascii"),
+    )
 
 
 @app.post("/api/generate-outfit", response_model=GenerateOutfitResponse)
@@ -72,9 +108,7 @@ async def generate_outfit(body: GenerateOutfitRequest) -> GenerateOutfitResponse
         raise HTTPException(status_code=400, detail="image_b64 is empty.")
 
     try:
-        png = gemini_service.generate_outfit_image(
-            image_bytes, "image/png", body.image_prompt
-        )
+        png = gemini_service.generate_outfit_image(image_bytes, body.image_prompt)
     except GeminiConfigError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
     except Exception as exc:  # pragma: no cover

@@ -290,6 +290,23 @@ a { color: inherit; }
   font-weight: 500;
 }
 
+/* Body measurements */
+.measure-image {
+  display: block;
+  max-width: 460px;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.measure-caption {
+  max-width: 560px;
+  margin: 16px auto 0;
+  text-align: center;
+  font-size: 13px;
+}
+
 /* Color palette */
 .palette { margin-top: 18px; }
 .palette h4 { margin: 0 0 14px; color: var(--muted); font-weight: 600; }

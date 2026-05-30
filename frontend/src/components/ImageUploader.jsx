@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
 
-// Lets the user pick / drag a person photo, shows a preview, and triggers analysis.
-export default function ImageUploader({ onAnalyze, loading, previewUrl }) {
+// Lets the user pick / drag a photo or video, shows a preview, triggers analysis.
+export default function ImageUploader({ onAnalyze, loading, previewUrl, previewIsVideo }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
 
   function pick(file) {
-    if (file && file.type.startsWith("image/")) onAnalyze(file);
+    if (file && (file.type.startsWith("image/") || file.type.startsWith("video/"))) {
+      onAnalyze(file);
+    }
   }
 
   return (
@@ -26,19 +28,23 @@ export default function ImageUploader({ onAnalyze, loading, previewUrl }) {
         }}
       >
         {previewUrl ? (
-          <img src={previewUrl} alt="Your photo" className="preview" />
+          previewIsVideo ? (
+            <video src={previewUrl} className="preview" muted autoPlay loop playsInline />
+          ) : (
+            <img src={previewUrl} alt="Your upload" className="preview" />
+          )
         ) : (
           <div className="dropzone-hint">
             <span className="up-icon">⬆</span>
-            <strong>Drag &amp; drop your photo</strong>
-            <span>or click to browse — JPEG, PNG or WebP, up to 10 MB</span>
-            <span className="pill-hint">Choose photo</span>
+            <strong>Drag &amp; drop your photo or video</strong>
+            <span>or click to browse — any image or video, up to 100 MB</span>
+            <span className="pill-hint">Choose file</span>
           </div>
         )}
         <input
           ref={inputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/*,video/*"
           hidden
           onChange={(e) => pick(e.target.files?.[0])}
         />
@@ -47,7 +53,7 @@ export default function ImageUploader({ onAnalyze, loading, previewUrl }) {
       {loading && (
         <div className="loading-row">
           <span className="spinner" />
-          <span>Analyzing your photo… this takes a few seconds.</span>
+          <span>Analyzing your upload… this can take a few seconds (longer for video).</span>
         </div>
       )}
     </div>

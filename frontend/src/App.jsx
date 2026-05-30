@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ImageUploader from "./components/ImageUploader.jsx";
 import BlueprintReport from "./components/BlueprintReport.jsx";
-import { analyzePhoto, fileToBase64 } from "./api.js";
+import { analyzePhoto } from "./api.js";
 
 const STEPS = [
   { n: 1, title: "Upload a photo", text: "Drop in one clear, full-body photo of yourself standing." },
@@ -11,7 +11,9 @@ const STEPS = [
 
 export default function App() {
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewIsVideo, setPreviewIsVideo] = useState(false);
   const [imageB64, setImageB64] = useState(null);
+  const [measurementImage, setMeasurementImage] = useState(null);
   const [blueprint, setBlueprint] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,13 +22,19 @@ export default function App() {
     setError("");
     setBlueprint(null);
     setLoading(true);
+    // Immediate local preview (image or video) while analysis runs.
     setPreviewUrl(URL.createObjectURL(file));
+    setPreviewIsVideo(file.type.startsWith("video/"));
 
     try {
-      // Keep the original photo (base64) around for later outfit generation.
-      const [bp, b64] = await Promise.all([analyzePhoto(file), fileToBase64(file)]);
+      const { blueprint: bp, base_image_b64, measurement_image_b64 } = await analyzePhoto(file);
       setBlueprint(bp);
-      setImageB64(b64);
+      setImageB64(base_image_b64);
+      setMeasurementImage(measurement_image_b64 || null);
+      // Replace the preview with the canonical still the server analyzed
+      // (so videos show their extracted frame).
+      setPreviewUrl(`data:image/jpeg;base64,${base_image_b64}`);
+      setPreviewIsVideo(false);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -36,7 +44,9 @@ export default function App() {
 
   function reset() {
     setPreviewUrl(null);
+    setPreviewIsVideo(false);
     setImageB64(null);
+    setMeasurementImage(null);
     setBlueprint(null);
     setError("");
   }
@@ -99,7 +109,12 @@ export default function App() {
             <h2>{blueprint ? "Your photo" : "Start your blueprint"}</h2>
             <p className="sub">Use a clear, full-body photo for the best analysis.</p>
           </div>
-          <ImageUploader onAnalyze={handleAnalyze} loading={loading} previewUrl={previewUrl} />
+          <ImageUploader
+            onAnalyze={handleAnalyze}
+            loading={loading}
+            previewUrl={previewUrl}
+            previewIsVideo={previewIsVideo}
+          />
           {error && <p className="error">{error}</p>}
         </div>
       </section>
@@ -110,7 +125,11 @@ export default function App() {
           <div className="wrap toolbar">
             <button className="btn ghost" onClick={reset}>↺ Start over with a new photo</button>
           </div>
-          <BlueprintReport blueprint={blueprint} imageB64={imageB64} previewUrl={previewUrl} />
+          <BlueprintReport
+            blueprint={blueprint}
+            imageB64={imageB64}
+            measurementImage={measurementImage}
+          />
         </div>
       )}
 

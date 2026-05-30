@@ -104,8 +104,36 @@ class OutfitFormula(BaseModel):
     )
 
 
+class BodyMeasurements(BaseModel):
+    """Approximate, photo-derived body measurements (in centimetres).
+
+    All fields are strings so they can hold honest ranges like '~43-45 cm'.
+    Without a reference object these are estimates, not exact values — the
+    `body_ratios` (scale-independent) are the most reliable part.
+    """
+
+    estimated_height: str = Field(description="Approximate height range in cm, e.g. '~170-175 cm'")
+    head: str = Field(description="Approximate head width/circumference in cm")
+    shoulder_width: str = Field(description="Approximate shoulder width in cm")
+    arm_length: str = Field(description="Approximate arm length in cm")
+    hand_length: str = Field(description="Approximate hand length in cm")
+    chest: str = Field(description="Approximate chest/bust circumference in cm")
+    waist: str = Field(description="Approximate waist circumference in cm")
+    hip: str = Field(description="Approximate hip circumference in cm")
+    inseam: str = Field(description="Approximate inseam / inner-leg length in cm")
+    body_ratios: str = Field(
+        description="Scale-independent ratios, e.g. 'shoulder:hip ~1.2:1, head:height ~1:7.5'"
+    )
+    recommended_top_size: str = Field(description="Suggested top size, e.g. 'M (38)'")
+    recommended_bottom_size: str = Field(description="Suggested bottom size, e.g. 'W32'")
+    note: str = Field(
+        description="Honest disclaimer that these are approximate estimates from a single "
+        "photo with no reference scale."
+    )
+
+
 class ConcernZoneSolution(BaseModel):
-    """Section 5 — targeted advice for a specific concern zone."""
+    """Section 6 — targeted advice for a specific concern zone."""
 
     zone: str = Field(description="The concern zone, e.g. 'Midsection', 'Arms', 'Height'")
     advice: str = Field(description="Targeted styling advice for this zone")
@@ -114,17 +142,41 @@ class ConcernZoneSolution(BaseModel):
 class StyleBlueprint(BaseModel):
     """Top-level deliverable aggregating all five sections."""
 
+    person_fully_visible: bool = Field(
+        description="True only if the WHOLE person is in frame head-to-toe (head, torso, "
+        "both arms, legs and feet all visible). False if any part is cut off or out of frame."
+    )
+    visibility_note: str = Field(
+        description="If not fully visible, name the missing parts (e.g. 'legs and feet are "
+        "cut off'); otherwise a short confirmation."
+    )
     overall_summary: str = Field(
         description="2-3 sentence personal style summary for this person"
     )
     silhouette_profile: SilhouetteProfile
     facial_architecture: FacialArchitecture
     chromatic_harmony: ChromaticHarmony
+    body_measurements: BodyMeasurements
     outfit_formulas: list[OutfitFormula] = Field(
         description="16-20 complete outfit formulas across varied occasions"
     )
     concern_zone_solutions: list[ConcernZoneSolution] = Field(
         description="3-6 concern-zone solutions"
+    )
+
+
+class AnalyzeResponse(BaseModel):
+    """Response for /api/analyze: the blueprint plus a normalized still image.
+
+    `base_image_b64` is a JPEG (base64, no data-URI prefix) produced server-side
+    from whatever was uploaded — a normalized photo, or a frame extracted from a
+    video. The frontend uses it for the preview and for outfit generation.
+    """
+
+    blueprint: StyleBlueprint
+    base_image_b64: str = Field(description="Base64 JPEG still derived from the upload")
+    measurement_image_b64: str = Field(
+        description="Base64 image of the person with white measurement caliper lines drawn on"
     )
 
 

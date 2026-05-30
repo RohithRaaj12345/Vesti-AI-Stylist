@@ -13,13 +13,14 @@ function Tags({ items }) {
   );
 }
 
-// Renders the full 5-section Style Blueprint in Samsung-style bands.
-export default function BlueprintReport({ blueprint, imageB64, previewUrl }) {
+// Renders the full Style Blueprint in Samsung-style bands.
+export default function BlueprintReport({ blueprint, imageB64, measurementImage }) {
   const {
     overall_summary,
     silhouette_profile: sil,
     facial_architecture: face,
     chromatic_harmony: color,
+    body_measurements: bm,
     outfit_formulas,
     concern_zone_solutions,
   } = blueprint;
@@ -56,8 +57,31 @@ export default function BlueprintReport({ blueprint, imageB64, previewUrl }) {
         </div>
       </section>
 
+      {/* Body Measurements — generated overlay image */}
+      {measurementImage && (
+        <section className="band">
+          <div className="wrap">
+            <div className="section-head">
+              <h2>Body Measurements</h2>
+              <p className="sub">Approximate measurements read from your upload — in centimetres.</p>
+            </div>
+            <img
+              className="measure-image"
+              src={`data:image/jpeg;base64,${measurementImage}`}
+              alt="Your measurements"
+            />
+            {bm && (
+              <p className="muted measure-caption">
+                Suggested sizes: Top <b>{bm.recommended_top_size}</b> · Bottom{" "}
+                <b>{bm.recommended_bottom_size}</b>. {bm.note}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Silhouette + Facial — 2-up grid */}
-      <section className="band alt">
+      <section className="band">
         <div className="wrap">
           <div className="section-head">
             <h2>Your shape &amp; features</h2>
@@ -105,7 +129,7 @@ export default function BlueprintReport({ blueprint, imageB64, previewUrl }) {
       </section>
 
       {/* Outfit formulas — product grid */}
-      <section className="band alt" id="looks-grid">
+      <section className="band" id="looks-grid">
         <div className="wrap">
           <div className="section-head">
             <h2>Your Outfit Formulas</h2>
