@@ -1,0 +1,11 @@
+services:
+  vesti:
+    build: .
+    container_name: vesti
+    ports:
+      - "9005:9005"
+    # Injects GEMINI_API_KEY (and anything else) into the container at runtime.
+    # The key is never baked into the image.
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped

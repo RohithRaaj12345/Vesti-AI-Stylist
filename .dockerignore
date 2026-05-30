@@ -1,0 +1,10 @@
+# Keep the build context small and secrets out of the image
+**/node_modules
+**/venv
+**/__pycache__
+**/*.pyc
+**/dist
+**/.env
+.git
+.gitignore
+*.md
