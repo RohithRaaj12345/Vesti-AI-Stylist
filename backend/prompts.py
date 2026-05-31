@@ -28,17 +28,22 @@ Produce ALL of the following, filling every field of the schema:
 3. Chromatic Harmony Map — determine the skin undertone and color "season", then
    give about 10 flattering colors and about 4 colors to avoid. Every color MUST
    include a realistic hex code.
-4. Body Measurements — measure the person as they actually are. There is NO
-   reference object, so you cannot be exact: estimate the person's overall height
-   range from their visible proportions, then scale every other measurement from
-   it. Express each as an APPROXIMATE RANGE in centimetres, e.g. "~43-45 cm".
-   Provide: estimated_height, head (width/circumference), shoulder_width,
-   arm_length, hand_length, chest, waist, hip, inseam. Also give `body_ratios`
-   that do NOT depend on absolute scale (e.g. "shoulder:hip ~1.2:1, head:height
-   ~1:7.5, torso:leg ~1:1.1") — these are the most reliable numbers. Give
-   recommended_top_size and recommended_bottom_size. Keep `note` honest: state that
-   these are approximate estimates read from a single photo with no reference scale.
-   Never invent confident exact numbers; ranges only.
+4. Body Measurements — estimate the person's sizes as they actually are, in
+   centimetres. Method (IMPORTANT for consistency):
+   a) First decide the person's clothing sizes confidently from the photo:
+      `recommended_top_size` (e.g. S/M/L or a chest number) and
+      `recommended_bottom_size` (a waist size, e.g. W30).
+   b) Then DERIVE the body WIDTH measurements from those sizes using standard adult
+      size charts, so the numbers AGREE with the sizes — they must not contradict:
+      - `waist` (cm) must match the bottom/waist size (e.g. W30 ≈ 76 cm, W32 ≈ 81 cm).
+      - `chest` must match the top size (e.g. men's M ≈ 96-101 cm, women's M ≈ 88-92 cm).
+      - `hip` ≈ a few cm more than the waist; `shoulder_width` follows from the top size.
+   c) Estimate `estimated_height`, `inseam`, `head`, `arm_length`, `hand_length`
+      from the visible body proportions.
+   Express every value as an APPROXIMATE RANGE, e.g. "~75-80 cm". Also give
+   `body_ratios` (scale-independent, e.g. "shoulder:hip ~1.2:1, head:height ~1:7.5").
+   Keep `note` honest: approximate estimates from a single photo, no reference scale.
+   The widths and the recommended sizes must be mutually consistent.
 5. Outfit Formulas — design 16 to 20 complete, varied head-to-toe outfits across
    different occasions (work, casual, evening, formal, weekend, travel, etc.).
    Express each outfit as an `items` list of about 4 pieces — a Top, a Bottom,
@@ -76,34 +81,30 @@ def build_image_prompt(outfit_image_prompt: str) -> str:
 
 
 def build_measurement_prompt(measures) -> str:
-    """Instruct the image model to add a geometric body-proportion overlay.
+    """Instruct the image model to add an elegant geometric body-proportion overlay.
 
-    Matches a stylist's body-frame map: centre axes, shoulder/hip corner brackets,
-    diagonal hourglass lines and a centre diamond — plus measurement labels.
-    `measures` supplies the EXACT label text so the model never invents numbers.
+    Reproduces the iconik body-frame map: thin grey axes, shoulder/hip corner
+    brackets, dotted diagonal hourglass lines and a centre diamond — NO text.
+    `measures` is unused (the overlay is purely geometric; sizes show in the caption).
     """
     return (
-        "Add a clean GEOMETRIC BODY-PROPORTION overlay on top of this photo, in the "
-        "minimalist style of a stylist's body-frame map. Keep this SIMPLE and CLEAR.\n\n"
-        "ABSOLUTE RULES:\n"
-        "- Keep the underlying photo EXACTLY the same: same person, face, hair, body, "
-        "clothing, pose, background, framing and dimensions. Only add overlay lines on top.\n"
-        "- Use ONE single colour for every line and label: solid bright WHITE.\n"
-        "- Lines must be BOLD, perfectly STRAIGHT, clean and sharp — easy to see. Keep the "
-        "number of lines small so it stays uncluttered.\n\n"
-        "Draw exactly these elements, aligned to the body:\n"
-        "- A vertical CENTRE line straight down the middle, from the top of the head to "
-        "between the feet.\n"
-        "- A horizontal line across the waist, spanning the body width.\n"
-        "- Right-angle corner BRACKETS at the two SHOULDERS marking shoulder width.\n"
-        "- Right-angle corner BRACKETS at the two HIPS marking hip width.\n"
-        "- A small DIAMOND outline at the centre of the waist.\n\n"
-        "Add LARGE, clearly readable WHITE labels beside the matching lines, using EXACTLY "
-        "this text (keep labels off the body, in the empty space):\n"
-        f"- Height: {measures.estimated_height}\n"
-        f"- Shoulders: {measures.shoulder_width}\n"
-        f"- Waist: {measures.waist}\n"
-        f"- Hips: {measures.hip}\n\n"
-        "Result: a simple, bold, clean WHITE measurement overlay that is easy to read, on "
-        "the completely unchanged photo."
+        "Add an ELEGANT GEOMETRIC body-proportion overlay on top of this photo, in the refined "
+        "minimalist style of a fashion stylist's body-frame analysis (like a Da Vinci "
+        "proportion study). Keep the underlying photo EXACTLY the same (same person, face, "
+        "body, clothing, pose, background, framing and dimensions) — only add the thin overlay "
+        "on top.\n\n"
+        "STYLE: use THIN, elegant, semi-transparent soft WHITE / light GREY lines — subtle and "
+        "refined, NOT bold. Absolutely NO text, NO numbers, NO labels anywhere on the image.\n\n"
+        "Draw, anchored symmetrically and precisely to the body:\n"
+        "1. A vertical CENTRE AXIS line straight down the body's midline — through the centre "
+        "of the head, the navel, and down to between the feet.\n"
+        "2. A horizontal AXIS line crossing it at chest/shoulder level, extending a little "
+        "beyond the body on both sides.\n"
+        "3. Small right-angle CORNER BRACKETS marking the SHOULDER width (upper, at the two "
+        "shoulders) and the HIP width (lower, at the two hips).\n"
+        "4. Two faint DOTTED diagonal lines running from the shoulders downward and outward "
+        "past the hips, crossing at the body centre to form an hourglass / X.\n"
+        "5. A small DIAMOND (rhombus) outline at the centre where the lines cross (navel level).\n\n"
+        "The result must look elegant, symmetrical, minimal and precise — thin grey geometric "
+        "lines only, NO text or numbers, on the completely unchanged photo."
     )

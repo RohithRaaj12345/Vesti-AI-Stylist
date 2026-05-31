@@ -24,8 +24,8 @@ load_dotenv()
 
 ANALYSIS_MODEL = "gemini-2.5-flash"
 IMAGE_MODEL = "gemini-2.5-flash-image"
-# Measurement overlay: use the cheaper Flash image model (cost control).
-MEASUREMENT_MODELS = ["gemini-2.5-flash-image"]
+# Measurement overlay: Gemini 3 Pro (best placement/text); flash only as a fallback.
+MEASUREMENT_MODELS = ["gemini-3-pro-image", "gemini-2.5-flash-image"]
 
 
 def _analysis_config() -> types.GenerateContentConfig:

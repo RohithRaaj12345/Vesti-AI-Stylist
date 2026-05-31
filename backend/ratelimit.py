@@ -9,7 +9,7 @@ import os
 
 from redis_client import r
 
-WINDOW_MIN = int(os.getenv("RATE_LIMIT_WINDOW_MIN", "30"))
+WINDOW_MIN = int(os.getenv("RATE_LIMIT_WINDOW_MIN", "5"))
 
 
 def _key(user_id: str) -> str:

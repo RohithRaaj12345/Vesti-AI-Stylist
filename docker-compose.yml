@@ -38,7 +38,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-vestipass}
       MYSQL_DB: ${MYSQL_DB:-vesti}
       REDIS_URL: redis://redis:6379/0
-      RATE_LIMIT_WINDOW_MIN: "30"
+      RATE_LIMIT_WINDOW_MIN: "5"
       SESSION_TTL: "604800"
       OTP_DEV_MODE: "true"
       PHONE_REGION: "IN"
