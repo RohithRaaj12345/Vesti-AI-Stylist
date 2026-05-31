@@ -8,6 +8,10 @@ __pycache__/
 frontend/node_modules/
 frontend/dist/
 
+# Runtime data (logs, sqlite) + secrets
+data/
+backend/data/
+
 # Editor / OS
 .vscode/
 .idea/

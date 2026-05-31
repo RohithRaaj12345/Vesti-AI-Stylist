@@ -1,11 +1,57 @@
 services:
+  db:
+    image: mysql:8
+    container_name: vesti-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DB:-vesti}
+      MYSQL_USER: ${MYSQL_USER:-vesti}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-vestipass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-rootpass}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7
+    container_name: vesti-redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
   vesti:
     build: .
     container_name: vesti
     ports:
       - "9005:9005"
-    # Injects GEMINI_API_KEY (and anything else) into the container at runtime.
-    # The key is never baked into the image.
+    # GEMINI_API_KEY comes from backend/.env; MySQL/Redis config is set here.
     env_file:
       - ./backend/.env
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: "3306"
+      MYSQL_USER: ${MYSQL_USER:-vesti}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-vestipass}
+      MYSQL_DB: ${MYSQL_DB:-vesti}
+      REDIS_URL: redis://redis:6379/0
+      RATE_LIMIT_WINDOW_MIN: "30"
+      SESSION_TTL: "604800"
+      OTP_DEV_MODE: "true"
+      PHONE_REGION: "IN"
+      DATA_DIR: /app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:

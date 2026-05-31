@@ -25,10 +25,7 @@ function OutfitCard({ outfit, imageB64 }) {
     <div className="outfit-card">
       <div className="outfit-visual">
         {status === "done" && img ? (
-          <>
-            <img src={img} alt={outfit.occasion} className="outfit-img" />
-            <button className="btn ghost sm regen" onClick={onGenerate}>Regenerate</button>
-          </>
+          <img src={img} alt={outfit.occasion} className="outfit-img" />
         ) : status === "loading" ? (
           <div className="spinner-box">
             <div className="spinner" />

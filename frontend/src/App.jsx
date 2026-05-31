@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ImageUploader from "./components/ImageUploader.jsx";
 import BlueprintReport from "./components/BlueprintReport.jsx";
-import { analyzePhoto } from "./api.js";
+import AuthPanel from "./components/AuthPanel.jsx";
+import { analyzePhoto, me, logout } from "./api.js";
 
 const STEPS = [
   { n: 1, title: "Upload a photo", text: "Drop in one clear, full-body photo of yourself standing." },
@@ -17,6 +18,17 @@ export default function App() {
   const [blueprint, setBlueprint] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [user, setUser] = useState(undefined); // undefined=loading, null=logged out, obj=in
+
+  useEffect(() => {
+    me().then((u) => setUser(u)).catch(() => setUser(null));
+  }, []);
+
+  async function handleLogout() {
+    await logout();
+    setUser(null);
+    reset();
+  }
 
   async function handleAnalyze(file) {
     setError("");
@@ -59,8 +71,14 @@ export default function App() {
           <a className="brand" href="#top">Vesti</a>
           <div className="nav-links">
             <a href="#how">How it works</a>
-            <a href="#start">Try it</a>
-            <a className="btn sm" href="#start">Get started</a>
+            {user ? (
+              <>
+                <span className="nav-user">{user.email}</span>
+                <button className="btn sm ghost" onClick={handleLogout}>Log out</button>
+              </>
+            ) : (
+              <a className="btn sm" href="#start">Get started</a>
+            )}
           </div>
         </div>
       </nav>
@@ -102,25 +120,37 @@ export default function App() {
         </div>
       </section>
 
-      {/* The tool */}
+      {/* The tool (requires login) */}
       <section className="band" id="start">
         <div className="wrap">
-          <div className="section-head" style={{ textAlign: "center" }}>
-            <h2>{blueprint ? "Your photo" : "Start your blueprint"}</h2>
-            <p className="sub">Use a clear, full-body photo for the best analysis.</p>
-          </div>
-          <ImageUploader
-            onAnalyze={handleAnalyze}
-            loading={loading}
-            previewUrl={previewUrl}
-            previewIsVideo={previewIsVideo}
-          />
-          {error && <p className="error">{error}</p>}
+          {user ? (
+            <>
+              <div className="section-head" style={{ textAlign: "center" }}>
+                <h2>{blueprint ? "Your photo" : "Start your blueprint"}</h2>
+                <p className="sub">Use a clear, full-body photo for the best analysis.</p>
+              </div>
+              <ImageUploader
+                onAnalyze={handleAnalyze}
+                loading={loading}
+                previewUrl={previewUrl}
+                previewIsVideo={previewIsVideo}
+              />
+              {error && <p className="error">{error}</p>}
+            </>
+          ) : (
+            <>
+              <div className="section-head" style={{ textAlign: "center" }}>
+                <h2>Log in to start</h2>
+                <p className="sub">Create an account to build your style blueprint.</p>
+              </div>
+              {user === null && <AuthPanel onAuthed={setUser} />}
+            </>
+          )}
         </div>
       </section>
 
       {/* Results */}
-      {blueprint && (
+      {user && blueprint && (
         <div className="report" id="looks">
           <div className="wrap toolbar">
             <button className="btn ghost" onClick={reset}>↺ Start over with a new photo</button>

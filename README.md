@@ -168,36 +168,49 @@ Open http://localhost:5173.
 
 ## Run with Docker
 
-The whole app (frontend + backend) runs in **one container on port 9005** — FastAPI serves
-both the API and the built React site, so there's only one port to expose.
+`docker compose` runs **three services** — the app (port 9005) + **MySQL** (accounts, OTPs,
+logs) + **Redis** (login sessions, rate-limit). FastAPI serves both the API and the built
+React site, so only port 9005 is exposed.
 
 **Prerequisite:** put your key in `backend/.env` (`GEMINI_API_KEY=...`). It's injected at
-runtime via `env_file` and is **never baked into the image**.
+runtime via `env_file` and is **never baked into the image**. MySQL/Redis config is set in
+`docker-compose.yml` (sensible defaults; override via a root `.env` if you like).
 
 ```powershell
 # from the iconik-ai/ folder
 docker compose up --build        # add -d to run detached
 ```
 
-Then open **http://localhost:9005** (API at `/api/...`, Swagger at `/docs`).
+Then open **http://127.0.0.1:9005** (use `127.0.0.1`, not `localhost` — Docker Desktop's IPv6
+forwarding for `localhost` can hang on Windows). API at `/api/...`, Swagger at `/docs`.
 
-Stop it with `docker compose down`.
+Stop it with `docker compose down` (data persists in the `mysql_data` / `redis_data` volumes).
 
-Single-container alternative (no compose):
-
-```powershell
-docker build -t vesti .
-docker run -p 9005:9005 --env-file backend/.env vesti
-```
+### Accounts, limits & logs
+- **Login required:** users **register** (name, mobile, email, password), **verify** an email
+  OTP **and** a phone OTP, then **log in**. The session token is stored in the browser's
+  `localStorage` and sent as `Authorization: Bearer <token>`.
+- **OTP delivery = dev mode** by default: codes are written to `data/app.log` (and returned in
+  dev responses) — no email/SMS account needed. Set `OTP_DEV_MODE=false` and configure a real
+  SMTP / SMS provider to send for real.
+- **Rate limit:** each user may upload **1 image per 30 minutes** (`RATE_LIMIT_WINDOW_MIN`).
+- **Logs:** every action (who, when, model, ₹ cost) is in the MySQL `request_logs` table and
+  `data/app.log`. Cheap to read:
+  ```powershell
+  docker exec vesti-mysql mysql -uvesti -pvestipass vesti -e "SELECT ts,email,action,status,cost_inr FROM request_logs ORDER BY ts DESC LIMIT 20;"
+  ```
 
 How it works: a multi-stage `Dockerfile` builds the frontend (`node`) then copies the static
 `dist/` into the Python image as `./static`; `main.py` mounts it so the SPA and `/api/*` are
-served from the same origin (no CORS/proxy needed). Local dev is unaffected — without a
-`./static` folder the backend stays API-only.
+served from the same origin. Local dev is unaffected — without a `./static` folder the backend
+stays API-only (but local dev now also needs MySQL + Redis reachable).
 
 ---
 
 ## API reference
+
+> 📑 **Full API reference with sample requests/responses, the backend workflow, and the user
+> flow is in [`docs/API.md`](docs/API.md).** The summary below is a quick view.
 
 Base URL (dev): `http://localhost:8000`
 
